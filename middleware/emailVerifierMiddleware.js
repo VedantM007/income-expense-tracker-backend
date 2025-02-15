@@ -1,5 +1,3 @@
-const EmailVerifier = require('node-email-verifier');
-
 const verifyEmailMiddleware = async (req, res, next) => {
   const { email } = req.body;
 
@@ -8,19 +6,15 @@ const verifyEmailMiddleware = async (req, res, next) => {
   }
 
   try {
-    // Create a verifier instance
-    const verifier = new EmailVerifier();
+    const { default: EmailVerifier } = await import('node-email-verifier');
 
-    // Verify the email address
-    const result = await verifier.verify(email);
+    // Call the appropriate method from the library
+    const result = await EmailVerifier.verify(email);
 
-    // Check verification results
     if (result.valid) {
-      next(); // Proceed to the next middleware or controller
+      next();
     } else {
-      res.status(400).json({
-        error: 'Entered Email does not exists.',
-      });
+      res.status(400).json({ error: 'Entered Email does not exist.' });
     }
   } catch (error) {
     console.error(`Email verification error: ${error.message}`);

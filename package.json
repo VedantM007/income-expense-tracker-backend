@@ -2,9 +2,10 @@
   "name": "income-expense-tracker-backend",
   "version": "1.0.0",
   "description": "This repository contains Express js code for An Income and Expense tracker backend APIs",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "mailgun.js": "^11.1.0",
     "mongoose": "^8.9.6",
-    "node-email-verifier": "^2.0.0"
+    "node-email-verifier": "^2.0.0",
+    "nodemon": "^3.1.9"
   }
 }

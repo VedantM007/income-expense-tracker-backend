@@ -4,7 +4,7 @@ const env = require('../environments/dev.env');
 const connectDB = async () => {
     const mongoURI = env.mongoDbConnectionString;
     try {
-        await mongoose.connect(mongoURI, {
+        await moongoose.connect(mongoURI, {
           useNewUrlParser: true,
           useUnifiedTopology: true,
         });
