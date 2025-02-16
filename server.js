@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const incomeRoutes = require('./routes/incomeRoutes')
 
 const app = express();
 require('dotenv').config();
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 
 //Routes
 app.use('/auth', authRoutes);
+app.use('/income', incomeRoutes);
 
 //Start Server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`))
