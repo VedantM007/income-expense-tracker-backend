@@ -48,7 +48,7 @@ exports.getAllExpensesByUserId = async (req, res) => {
             return res.status(400).json({ error: 'Invalid or missing User ID' });
         }
 
-        // Fetch incomes
+        // Fetch expenses
         const expenses = await Expense.find({ userId });
 
         // Fetch all categories (to manually map categoryId → categoryName)
@@ -58,7 +58,7 @@ exports.getAllExpensesByUserId = async (req, res) => {
             return acc;
         }, {});
 
-        // Attach categoryName to each income
+        // Attach categoryName to each expense
         const expensesWithCategory = expenses.map(expense => ({
             ...expense.toObject(),
             categoryName: categoryMap[expense.category] || "Unknown"
@@ -67,7 +67,7 @@ exports.getAllExpensesByUserId = async (req, res) => {
         res.status(200).json(expensesWithCategory);
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Failed to fetch incomes' });
+        res.status(500).json({ error: 'Failed to fetch expenses' });
     }
 };
 
@@ -82,3 +82,82 @@ exports.deleteExpenseById = async (req, res) => {
       res.status(500).json({ error: 'Failed to delete expense' });
     }
   };
+
+
+  exports.getExpenseByExpenseId = async (req, res) => {
+    try {
+      const { _id } = req.query;
+      if (!_id) {
+        return res.status(400).json({ error: "Invalid or missing Expense ID" });
+      }
+  
+      // Fetch expense by expense Id
+      const expense = await Expense.findById({ _id });
+  
+      // Fetch all categories (to manually map categoryId → categoryName)
+      const categories = await ExpenseCategory.find();
+      const categoryMap = categories.reduce((acc, cat) => {
+        acc[cat.id] = cat.value; // Map id to value
+        return acc;
+      }, {});
+  
+      // Convert Mongoose document to a plain object
+      const expensePlain = expense.toObject();
+  
+      // Attach categoryName
+      const expenseWithCategory = {
+        ...expensePlain,
+        categoryName: categoryMap[expensePlain.category] || "Unknown",
+      };
+  
+      res.status(200).json(expenseWithCategory);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch expense by expense ID" });
+    }
+  };
+  
+  exports.updateExpense = async (req, res) => {
+      try {
+        const { _id } = req.query; // Get expense ID from query params
+        const { title, amount, date, description, category, userId } = req.body;
+    
+        if (!_id) {
+          return res.status(400).json({ error: "Expense ID is required" });
+        }
+    
+        if (!title || !amount || !date || !description || !category || !userId) {
+          return res.status(400).json({ error: "All fields are required" });
+        }
+    
+        // Convert incoming date string to a Date object
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate.getTime())) {
+          return res.status(400).json({ error: "Invalid date format" });
+        }
+    
+        // Check if the expense exists
+        const existingExpense = await Expense.findById(_id);
+        if (!existingExpense) {
+          return res.status(404).json({ error: "Expense not found" });
+        }
+    
+        // Update the expense record
+        const updatedExpense = await Expense.findByIdAndUpdate(
+          _id,
+          {
+            title,
+            amount,
+            date: parsedDate,
+            description,
+            category,
+            userId,
+          },
+          { new: true } // Return the updated document
+        );
+    
+        res.status(200).json({ success: "Expense updated successfully", updatedExpense });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to update expense" });
+      }
+    };

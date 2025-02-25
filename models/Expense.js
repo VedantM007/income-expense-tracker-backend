@@ -7,6 +7,8 @@ const ExpenseSchema = new moongoose.Schema({
     description: { type: String , required: true},
     category: { type: Number, ref: 'ExpenseCategory', required: true }, // Referencing category by numeric ID
     userId: { type: moongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-});
+},
+{ timestamps: true }
+);
 
 module.exports = moongoose.model('Expense', ExpenseSchema)

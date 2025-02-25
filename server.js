@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes')
 
 const app = express();
 require('dotenv').config();
@@ -22,6 +23,7 @@ app.use(bodyParser.json());
 app.use('/auth', authRoutes);
 app.use('/income', incomeRoutes);
 app.use('/expense', expenseRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 //Start Server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`))
