@@ -48,7 +48,7 @@ exports.getAllIncomesByUserId = async (req, res) => {
     }
 
     // Fetch incomes
-    const incomes = await Income.find({ userId });
+    const incomes = await Income.find({ userId }).sort({date : 1})
 
     // Fetch all categories (to manually map categoryId → categoryName)
     const categories = await Category.find();

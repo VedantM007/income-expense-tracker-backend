@@ -17,17 +17,25 @@ exports.getDashboardStats = async (req, res) => {
     const totalExpense = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpense;
 
-    // ✅ Fix: Get the latest added/updated income and expense
+    // ✅ Get the latest added/updated income and expense
     const latestIncome = await Income.findOne({ userId }).sort({ updatedAt: -1, createdAt: -1 }).lean();
     const latestExpense = await Expense.findOne({ userId }).sort({ updatedAt: -1, createdAt: -1 }).lean();
 
-    // Find min and max income
-    const minIncome = incomes.length ? incomes.reduce((min, curr) => (curr.amount < min.amount ? curr : min)) : null;
-    const maxIncome = incomes.length ? incomes.reduce((max, curr) => (curr.amount > max.amount ? curr : max)) : null;
+    // ✅ Fix: Correct min/max income handling
+    let minIncome = 0;
+    let maxIncome = 0;
+    if (incomes.length > 0) {
+      minIncome = incomes.length === 1 ? 0 : Math.min(...incomes.map(i => i.amount));
+      maxIncome = Math.max(...incomes.map(i => i.amount));
+    }
 
-    // Find min and max expense
-    const minExpense = expenses.length ? expenses.reduce((min, curr) => (curr.amount < min.amount ? curr : min)) : null;
-    const maxExpense = expenses.length ? expenses.reduce((max, curr) => (curr.amount > max.amount ? curr : max)) : null;
+    // ✅ Fix: Correct min/max expense handling
+    let minExpense = 0;
+    let maxExpense = 0;
+    if (expenses.length > 0) {
+      minExpense = expenses.length === 1 ? 0 : Math.min(...expenses.map(e => e.amount));
+      maxExpense = Math.max(...expenses.map(e => e.amount));
+    }
 
     // Prepare response
     res.status(200).json({
@@ -38,10 +46,10 @@ exports.getDashboardStats = async (req, res) => {
         income: latestIncome || null,
         expense: latestExpense || null,
       },
-      minIncome: minIncome || null,
-      maxIncome: maxIncome || null,
-      minExpense: minExpense || null,
-      maxExpense: maxExpense || null,
+      minIncome,
+      maxIncome,
+      minExpense,
+      maxExpense,
     });
 
   } catch (error) {

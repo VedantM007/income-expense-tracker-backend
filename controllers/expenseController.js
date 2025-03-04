@@ -49,7 +49,7 @@ exports.getAllExpensesByUserId = async (req, res) => {
         }
 
         // Fetch expenses
-        const expenses = await Expense.find({ userId });
+        const expenses = await Expense.find({ userId }).sort({date : 1})
 
         // Fetch all categories (to manually map categoryId → categoryName)
         const categories = await ExpenseCategory.find();
