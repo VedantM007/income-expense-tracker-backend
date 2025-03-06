@@ -2,17 +2,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const JWT_SECRET = "your_secret_key";
-const Mailgun = require("mailgun.js");
-const formData = require("form-data");
-const dev = require("../environments/dev.env");
 const crypto = require("crypto");
 const transporter = require("../config/nodeMailerTransporter");
-// Initialize Mailgun
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: "api",
-  key: dev.mailGunAPIKey, // Replace with your Mailgun API Key
-});
+const InvalidToken = require("../models/InvalidToken");
 
 exports.signup = async (req, res) => {
   try {
@@ -40,24 +32,6 @@ exports.signup = async (req, res) => {
 
    
     // Step 5: Send welcome email
-    // try {
-    //   await mg.messages.create(dev.mailGunDomain, {
-    //     from: `Income-Expense Tracker <${dev.mailGunDomain}>`,
-    //     to: email,
-    //     subject: "Welcome to the Income-Expense Tracker",
-    //     template: "welcome_email",
-    //     "h:X-Mailgun-Variables": JSON.stringify({
-    //       firstName: firstName,
-    //       lastName: lastName,
-    //       currentYear: currentYear,
-    //     }),
-    //   });
-    // } catch (emailError) {
-    //   console.error("Email sending failed:", emailError);
-    // }
-
-    //step 6 : Respond with success
-      
     const mailOptions = {
       from: "vedantmandwe5@gmail.com",
       to: email,
@@ -152,6 +126,8 @@ exports.signup = async (req, res) => {
       else console.log(info);
     });
 
+    //step 6 : Respond with success
+      
     res
       .status(201)
       .json({ success: "User created successfully, Welcome Email sent!" });
@@ -183,25 +159,6 @@ exports.signin = async (req, res) => {
     await user.save();
 
     // Send OTP via email
-    // try {
-    //   await mg.messages.create(dev.mailGunDomain, {
-    //       from: `Income-Expense Tracker <${dev.mailGunDomain}>`,
-    //       to: email,
-    //       subject : "Your OTP for Sign In",
-    //       template: "otp_verification_email",
-    //       "h:X-Mailgun-Variables": JSON.stringify({
-    //       email : email,
-    //       otp : otp,
-    //       currentYear : currentYear
-    //     }),
-    //     "o:tracking": true, // Enable open and click tracking
-    //     "o:require-tls": true, // Ensure emails are sent over TLS
-    //     "o:tag": ["welcome"], // Add tags for better tracking
-    //     });
-    //  }
-    //  catch (emailError){
-    //   console.error("Email sending failed:", emailError);
-    //  }
     const mailOptions = {
       from: "vedantmandwe5@gmail.com",
       to: email,
@@ -373,23 +330,6 @@ exports.resendOtp = async (req, res) => {
     await user.save();
 
     // Send the new OTP via email
-    // try {
-    //   await mg.messages.create(dev.mailGunDomain, {
-    //     from: `Income-Expense Tracker <${dev.mailGunDomain}>`,
-    //     to: email,
-    //     subject: "Resend: Your OTP for Sign In",
-    //     template: "otp_verification_email",
-    //     "h:X-Mailgun-Variables": JSON.stringify({
-    //       email: email,
-    //       otp: otp,
-    //       currentYear: currentYear,
-    //     }),
-    //   });
-    // } catch (emailError) {
-    //   console.error("Email sending failed:", emailError);
-    //   return res.status(500).json({ error: "Failed to send OTP" });
-    // }
-
     const mailOptions = {
       from: "vedantmandwe5@gmail.com",
       to: email,
@@ -538,3 +478,186 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ error: "Failed to change password" });
   }
 };
+
+
+exports.sendResetPasswordEmail = async (req,res) =>{
+
+  try{
+    const {email} = req.body;
+    const currentYear = new Date().getFullYear();
+    //Check whether the user exists or not
+    const existingUser = await User.findOne({ email });
+    if (!existingUser)
+      return res
+        .status(400)
+        .json({ error: "This email doesn't exist or this email hasn't been registered yet" });
+
+         // Generate JWT token
+       const token = jwt.sign({ userId: existingUser._id}, JWT_SECRET, {
+      expiresIn: "10m",
+       });
+
+    // Send the reset password link via email
+    const mailOptions = {
+      from: "vedantmandwe5@gmail.com",
+      to: email,
+      subject: "Reset Password",
+      text: "Hello User",
+      html: `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 0;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 30px auto;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+   .email-header {
+  background: linear-gradient(90deg, #020024, #090979, #00d4ff, #23d5ab);
+  padding: 2rem;
+  text-align: center;
+  color: white !important;
+}
+      .email-body {
+        padding: 30px;
+      }
+      .email-body p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: #333;
+      }
+      .footer {
+        text-align: center;
+        padding: 15px;
+        background-color: #f1f1f1;
+        color: #777;
+        font-size: 14px;
+      }
+      @media (max-width: 600px) {
+        .email-container {
+          width: 90%;
+        }
+        .email-body {
+          padding: 15px;
+        }
+        .email-header {
+          flex-direction: column;
+        }
+        .email-header h1 {
+          margin: 10px 0 0;
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="email-header">
+        <h2>Income and Expense Tracker</h2>
+      </div>
+      <div class="email-body">
+        <p>Hello ${email},</p>
+        <p>To reset your password please click on this <a href="https://income-expense-tracker-x2a3.onrender.com/reset-password/${token}">link</a></p>
+        <p>This link is valid for 10 minutes. Please make sure to visit it within that time.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <p>Thank you,<br> The Support Team</p>
+      </div>
+      <div class="footer">
+        <p>© ${currentYear} Wayne Industries. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>`,
+    };
+    transporter.sendMail(mailOptions, function (err, info) {
+      if (err) console.log(err);
+      else console.log(info);
+    });
+
+    res.status(200).json({ message: "Reset password email sent" });
+
+  } catch(error){
+    console.error(error);
+    res.status(500).json({ error: "Failed to send the reset password email" });
+  }
+}
+
+exports.verifyResetToken = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    // Check if the token is already used/invalidated
+    const isInvalid = await InvalidToken.findOne({ token });
+    if (isInvalid) {
+      return res.status(400).json({ error: "Token has already been used or expired" });
+    }
+
+    // Verify the token
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+      res.status(200).json({ message: "Token is valid", userId: decoded.userId });
+    });
+
+  } catch (error) {
+    console.error("Token Verification Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { newPassword } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    // Check if token is already used/invalid
+    const isInvalid = await InvalidToken.findOne({ token });
+    if (isInvalid) {
+      return res.status(400).json({ error: "Token has already been used or expired" });
+    }
+
+    // Verify token
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+      if (err) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await User.findByIdAndUpdate(decoded.userId, { password: hashedPassword });
+
+      // Store the used token in InvalidToken collection to prevent reuse
+      await InvalidToken.create({ token });
+
+      res.status(200).json({ message: "Password reset successful. Please login." });
+    });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
