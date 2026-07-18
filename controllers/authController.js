@@ -1,77 +1,24 @@
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const JWT_SECRET = "your_secret_key";
-const crypto = require("crypto");
-const emailService = require("../services/email.service");
-const InvalidToken = require("../models/InvalidToken");
-
-
+const authService = require("../services/auth.service");
 
 exports.signup = async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
-
-    // Step 2: Check if the user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res
-        .status(400)
-        .json({ error: "User with this email already exists" });
-
-    //Step 3 : Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Step 4: Create a new user
-    const newUser = new User({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-    });
-    await newUser.save();
-
-    // Step 5: Send welcome email
-   await emailService.sendWelcomeEmail(email, firstName, lastName);
-
-    //step 6 : Respond with success
-      
+    const { status, success } = await authService.signUp(req.body);
+    //Respond with success  
     res
-      .status(201)
-      .json({ success: "User created successfully, Welcome Email sent!" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create user" });
+      .status(status)
+      .json({status, success});
+  } catch (error) {
+    res.status(error.status).json({status:error.status, error: error.message});
   }
 };
 
 exports.signin = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    
-    const user = await User.findOne({ email });
-    if (!user)
-      return res.status(401).json({ error: "Invalid email or password" });
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid)
-      return res.status(401).json({ error: "Invalid email or password" });
-
-    // Generate OTP
-    const otp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP
-    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
-
-    // Save OTP and expiration in the database
-    user.otp = otp;
-    user.otpExpires = otpExpires;
-    await user.save();
-
-    // Send OTP via email
-   await emailService.sendOtpForSignInEmail(email, otp)
-
-    res.status(200).json({
-      message: "OTP sent to email. Please verify to complete sign-in.",
-    });
+    const {status, success} = await authService.signin(req.body);
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to sign in" });
@@ -80,32 +27,11 @@ exports.signin = async (req, res) => {
 
 exports.verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: "Invalid email or OTP" });
-
-    // Check if OTP matches and is not expired
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(401).json({ error: "Invalid or expired OTP" });
-    }
-
-    // Clear OTP fields after successful verification
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    res.status(200).json({
-      userId: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      token,
-    });
+    const {status, success, data} = await authService.verifyOtp(req.body);
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success, data});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to verify OTP" });
@@ -114,28 +40,11 @@ exports.verifyOtp = async (req, res) => {
 
 exports.resendOtp = async (req, res) => {
   try {
-    const { email } = req.body;
-    
-
-    // Check if the user exists
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Generate a new OTP
-    const otp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP
-    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
-
-    // Save OTP and expiration in the database
-    user.otp = otp;
-    user.otpExpires = otpExpires;
-    await user.save();
-
-    // Send the new OTP via email
-    await emailService.resendOtpEmail(email, otp);
-
-    res.status(200).json({ message: "OTP resent successfully to your email." });
+    const {status, success} = await authService.resendOtp(req.body);
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to resend OTP" });
@@ -144,33 +53,11 @@ exports.resendOtp = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const { userId, oldPassword, newPassword } = req.body;
-
-    // Validate input
-    if (!userId || !oldPassword || !newPassword) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
-    // Find user by ID
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Verify old password
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ error: "Old password is incorrect" });
-    }
-
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password in the database
-    user.password = hashedNewPassword;
-    await user.save();
-
-    res.status(200).json({ message: "Password changed successfully" });
+    const {status, success} = await authService.changePassword(req.body);
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to change password" });
@@ -181,24 +68,11 @@ exports.changePassword = async (req, res) => {
 exports.sendResetPasswordEmail = async (req,res) =>{
 
   try{
-    const {email} = req.body;
-    
-    //Check whether the user exists or not
-    const existingUser = await User.findOne({ email });
-    if (!existingUser)
-      return res
-        .status(400)
-        .json({ error: "This email doesn't exist or this email hasn't been registered yet" });
-
-         // Generate JWT token
-       const token = jwt.sign({ userId: existingUser._id}, JWT_SECRET, {
-      expiresIn: "10m",
-       });
-
-    // Send the reset password link via email
-   await emailService.sendResetPasswordEmail(email, token);
-
-    res.status(200).json({ message: "Reset password email sent" });
+      const {status, success} = await authService.sendResetPasswordEmail(req.body);
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success});
 
   } catch(error){
     console.error(error);
@@ -208,25 +82,11 @@ exports.sendResetPasswordEmail = async (req,res) =>{
 
 exports.verifyResetToken = async (req, res) => {
   try {
-    const { token } = req.query;
-
-    if (!token) {
-      return res.status(400).json({ error: "Token is required" });
-    }
-
-    // Check if the token is already used/invalidated
-    const isInvalid = await InvalidToken.findOne({ token });
-    if (isInvalid) {
-      return res.status(400).json({ error: "Token has already been used or expired" });
-    }
-
-    // Verify the token
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-      if (err) {
-        return res.status(400).json({ error: "Invalid or expired token" });
-      }
-      res.status(200).json({ message: "Token is valid", userId: decoded.userId });
-    });
+    const {status, success, data} = await authService.verifyResetToken(req.query);
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success, data});
 
   } catch (error) {
     console.error("Token Verification Error:", error);
@@ -238,34 +98,13 @@ exports.verifyResetToken = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   try {
-    const { token } = req.query;
     const { newPassword } = req.body;
-
-    if (!token) {
-      return res.status(400).json({ error: "Token is required" });
-    }
-
-    // Check if token is already used/invalid
-    const isInvalid = await InvalidToken.findOne({ token });
-    if (isInvalid) {
-      return res.status(400).json({ error: "Token has already been used or expired" });
-    }
-
-    // Verify token
-    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
-      if (err) {
-        return res.status(400).json({ error: "Invalid or expired token" });
-      }
-
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await User.findByIdAndUpdate(decoded.userId, { password: hashedPassword });
-
-      // Store the used token in InvalidToken collection to prevent reuse
-      await InvalidToken.create({ token });
-
-      res.status(200).json({ message: "Password reset successful. Please login." });
-    });
+    const {token} = req.query;
+    const {status, success, data} = await authService.resetPassword({token, newPassword});
+    //Respond with success  
+    res
+      .status(status)
+      .json({status, success, data});
   } catch (error) {
     console.error("Reset Password Error:", error);
     res.status(500).json({ error: "Internal server error" });
