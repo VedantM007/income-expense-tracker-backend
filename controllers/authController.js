@@ -3,12 +3,9 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const JWT_SECRET = "your_secret_key";
 const crypto = require("crypto");
-const transporter = require("../config/nodeMailerTransporter");
+const emailService = require("../services/email.service");
 const InvalidToken = require("../models/InvalidToken");
-const generateWelcomeEmailTempalate = require("../templates/welcomeEmail.template");
-const generateOtpForSignInTemplate = require("../templates/otpForSignIn.template");
-const generateResendOtpEmailTemplate  = require("../templates/resendOtpEmail.template");
-const generateResetPasswordEmailTemplate = require("../templates/resetPasswordEmail.template")
+
 
 
 exports.signup = async (req, res) => {
@@ -35,17 +32,7 @@ exports.signup = async (req, res) => {
     await newUser.save();
 
     // Step 5: Send welcome email
-    const mailOptions = {
-      from: "vedantmandwe5@gmail.com",
-      to: email,
-      subject: "Welcome to the Income-Expense Tracker",
-      text: "Hello User",
-      html: generateWelcomeEmailTempalate(firstName, lastName),
-    };
-    transporter.sendMail(mailOptions, function (err, info) {
-      if (err) console.log(err);
-      else console.log(info);
-    });
+   await emailService.sendWelcomeEmail(email, firstName, lastName);
 
     //step 6 : Respond with success
       
@@ -61,7 +48,7 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const currentYear = new Date().getFullYear();
+    
     const user = await User.findOne({ email });
     if (!user)
       return res.status(401).json({ error: "Invalid email or password" });
@@ -80,17 +67,7 @@ exports.signin = async (req, res) => {
     await user.save();
 
     // Send OTP via email
-    const mailOptions = {
-      from: "vedantmandwe5@gmail.com",
-      to: email,
-      subject: "Your OTP for Sign In",
-      text: "Hello User",
-      html: generateOtpForSignInTemplate(email, otp),
-    };
-    transporter.sendMail(mailOptions, function (err, info) {
-      if (err) console.log(err);
-      else console.log(info);
-    });
+   await emailService.sendOtpForSignInEmail(email, otp)
 
     res.status(200).json({
       message: "OTP sent to email. Please verify to complete sign-in.",
@@ -138,7 +115,7 @@ exports.verifyOtp = async (req, res) => {
 exports.resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
-    const currentYear = new Date().getFullYear();
+    
 
     // Check if the user exists
     const user = await User.findOne({ email });
@@ -156,17 +133,7 @@ exports.resendOtp = async (req, res) => {
     await user.save();
 
     // Send the new OTP via email
-    const mailOptions = {
-      from: "vedantmandwe5@gmail.com",
-      to: email,
-      subject: "Resend: Your OTP for Sign In",
-      text: "Hello User",
-      html: generateResendOtpEmailTemplate(email, otp)
-    };
-    transporter.sendMail(mailOptions, function (err, info) {
-      if (err) console.log(err);
-      else console.log(info);
-    });
+    await emailService.resendOtpEmail(email, otp);
 
     res.status(200).json({ message: "OTP resent successfully to your email." });
   } catch (err) {
@@ -215,7 +182,7 @@ exports.sendResetPasswordEmail = async (req,res) =>{
 
   try{
     const {email} = req.body;
-    const currentYear = new Date().getFullYear();
+    
     //Check whether the user exists or not
     const existingUser = await User.findOne({ email });
     if (!existingUser)
@@ -229,17 +196,7 @@ exports.sendResetPasswordEmail = async (req,res) =>{
        });
 
     // Send the reset password link via email
-    const mailOptions = {
-      from: "vedantmandwe5@gmail.com",
-      to: email,
-      subject: "Reset Password",
-      text: "Hello User",
-      html: generateResetPasswordEmailTemplate(email, token),
-    };
-    transporter.sendMail(mailOptions, function (err, info) {
-      if (err) console.log(err);
-      else console.log(info);
-    });
+   await emailService.sendResetPasswordEmail(email, token);
 
     res.status(200).json({ message: "Reset password email sent" });
 
