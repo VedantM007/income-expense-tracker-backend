@@ -3,15 +3,14 @@ const generateWelcomeEmailTempalate = require("../templates/welcomeEmail.templat
 const generateOtpForSignInTemplate = require("../templates/otpForSignIn.template");
 const generateResendOtpEmailTemplate  = require("../templates/resendOtpEmail.template");
 const generateResetPasswordEmailTemplate = require("../templates/resetPasswordEmail.template")
-const EMAIL_FROM = process.env.EMAIL_USER;
-const DEFAULT_EMAIL_TEXT = "Hello User";
+const emailConfig = require("../config/email.config");
 
 const sendWelcomeEmail = async(email, firstName, lastName)=>{
     const mailOptions = {
-      from: EMAIL_FROM,
+      from: emailConfig.EMAIL_FROM,
       to: email,
-      subject: "Welcome to the Income-Expense Tracker",
-      text: DEFAULT_EMAIL_TEXT,
+      subject: emailConfig.EMAIL_SUBJECTS.WELCOME,
+      text: emailConfig.EMAIL_TEXT,
       html: generateWelcomeEmailTempalate(firstName, lastName),
     };
     await transporter.sendMail(mailOptions);
@@ -19,10 +18,10 @@ const sendWelcomeEmail = async(email, firstName, lastName)=>{
 
 const sendOtpForSignInEmail = async(email, otp)=>{
     const mailOptions = {
-      from: EMAIL_FROM,
+      from: emailConfig.EMAIL_FROM,
       to: email,
-      subject: "Your OTP for Sign In",
-      text: DEFAULT_EMAIL_TEXT,
+      subject: emailConfig.EMAIL_SUBJECTS.SIGNIN_OTP,
+      text: emailConfig.EMAIL_TEXT,
       html: generateOtpForSignInTemplate(email, otp),
     };
    await transporter.sendMail(mailOptions);
@@ -30,10 +29,10 @@ const sendOtpForSignInEmail = async(email, otp)=>{
 
 const sendResetPasswordEmail = async(email, token)=>{
       const mailOptions = {
-      from: EMAIL_FROM,
+      from: emailConfig.EMAIL_FROM,
       to: email,
-      subject: "Reset Password",
-      text: DEFAULT_EMAIL_TEXT,
+      subject: emailConfig.EMAIL_SUBJECTS.RESET_PASSWORD,
+      text: emailConfig.EMAIL_TEXT,
       html: generateResetPasswordEmailTemplate(email, token),
     };
     await transporter.sendMail(mailOptions);
@@ -41,10 +40,10 @@ const sendResetPasswordEmail = async(email, token)=>{
 
  const resendOtpEmail = async(email, otp)=>{
     const mailOptions = {
-      from: EMAIL_FROM,
+      from: emailConfig.EMAIL_FROM,
       to: email,
-      subject: "Your OTP for Sign In",
-      text: DEFAULT_EMAIL_TEXT,
+      subject: emailConfig.EMAIL_SUBJECTS.RESEND_OTP,
+      text: emailConfig.EMAIL_TEXT,
       html: generateResendOtpEmailTemplate(email, otp),
     };
     await transporter.sendMail(mailOptions);

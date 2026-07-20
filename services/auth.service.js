@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const JWT_SECRET = "your_secret_key";
+const authConfig = require("../config/auth.config");
 const crypto = require("crypto");
 const emailService = require("../services/email.service");
 const InvalidToken = require("../models/InvalidToken");
@@ -16,7 +16,7 @@ const signUp = async ({firstName, lastName, email, password}) => {
     }
 
     //Step 3 : Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, authConfig.BCRYPT_SALT_ROUNDS);
 
     // Step 4: Create a new user
     await User.create({
@@ -53,7 +53,7 @@ const signin = async ({email, password}) => {
 
     // Generate OTP
     const otp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP
-    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+    const otpExpires = Date.now() + authConfig.OTP_EXPIRY_MINUTES * 60 * 1000; // OTP expires in 10 minutes
 
     // Save OTP and expiration in the database
     user.otp = otp;
@@ -90,8 +90,8 @@ const verifyOtp = async({email, otp})=>{
     await user.save();
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
+    const token = jwt.sign({ id: user._id, email: user.email }, authConfig.JWT_SECRET, {
+      expiresIn: authConfig.JWT_EXPIRY,
     });
 
 
@@ -118,7 +118,7 @@ const resendOtp = async({email})=>{
 
     // Generate a new OTP
     const otp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP
-    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+    const otpExpires = Date.now() + authConfig.OTP_EXPIRY_MINUTES * 60 * 1000; // OTP expires in 10 minutes
 
     // Save OTP and expiration in the database
     user.otp = otp;
@@ -159,7 +159,7 @@ const changePassword = async({userId, oldPassword, newPassword})=>{
     }
 
     // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, authConfig.BCRYPT_SALT_ROUNDS);
 
     // Update password in the database
     user.password = hashedNewPassword;
@@ -182,8 +182,8 @@ const sendResetPasswordEmail = async({email})=>{
     }
 
          // Generate JWT token
-       const token = jwt.sign({ userId: existingUser._id}, JWT_SECRET, {
-      expiresIn: "10m",
+       const token = jwt.sign({ userId: existingUser._id}, authConfig.JWT_SECRET, {
+      expiresIn: authConfig.RESET_PASSWORD_EXPIRY,
        });
 
     // Send the reset password link via email
@@ -211,7 +211,7 @@ const verifyResetToken = async({token})=>{
     }
 
     // Verify the token
-   const decoded = jwt.verify(token, JWT_SECRET);
+   const decoded = jwt.verify(token, authConfig.JWT_SECRET);
    return {
         status: 200,
         success: "Token is valid",
@@ -238,9 +238,9 @@ const resetPassword = async({token, newPassword})=>{
     }
 
     // Verify token
-  const decoded = jwt.verify(token, JWT_SECRET);
+  const decoded = jwt.verify(token, authConfig.JWT_SECRET);
       // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, authConfig.BCRYPT_SALT_ROUNDS);
       await User.findByIdAndUpdate(decoded.userId, { password: hashedPassword });
 
       // Store the used token in InvalidToken collection to prevent reuse
