@@ -9,7 +9,7 @@ router.post('/addExpense', verifyToken, addExpense);
 router.get('/getAllExpensesByUserId', verifyToken, getAllExpensesByUserId);
 router.delete('/deleteExpenseById', verifyToken, deleteExpenseById);
 router.get('/getExpenseByExpenseId', verifyToken, getExpenseByExpenseId);
-router.put('/updateExpense', verifyToken, updateExpense);
+router.post('/updateExpense', verifyToken, updateExpense);
 
 
 module.exports = router;

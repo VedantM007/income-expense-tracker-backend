@@ -9,7 +9,7 @@ router.post('/addIncome', verifyToken, addIncome);
 router.get('/getAllIncomesByUserId', verifyToken, getAllIncomesByUserId);
 router.delete('/deleteIncomeById', verifyToken, deleteIncomeById);
 router.get('/getIncomeByIncomeId', verifyToken, getIncomeByIncomeId);
-router.put('/updateIncome', verifyToken, updateIncome);
+router.post('/updateIncome', verifyToken, updateIncome);
 
 
 module.exports = router;

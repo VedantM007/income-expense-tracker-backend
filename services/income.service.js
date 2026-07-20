@@ -1,4 +1,4 @@
-const Category = require("../models/IncomeCategory");
+const IncomeCategory = require("../models/IncomeCategory");
 const Income = require("../models/Income");
 const moongoose = require("mongoose");
 
@@ -95,13 +95,15 @@ const getAllIncomesByUserId = async (query) => {
             success: "Incomes fetched successfully!",
             data: incomesWithCategory
         }
-    } catch(error){
-        return {
-            status: 500,
-            success: "Failed to fetch incomes!",
-            error: error
-        }
-    }
+    } catch (error) {
+    console.error("getAllIncomesByUserId Error:", error);
+
+    return {
+        status: 500,
+        success: false,
+        error: error.message
+    };
+}
 }
 
 const deleteIncomeById = async (query) => {
