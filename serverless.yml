@@ -1,0 +1,24 @@
+service: income-expense-tracker
+
+# frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-south-1
+  stage: dev
+  timeout: 15
+  
+  environment:
+    JWT_SECRET: ${env:JWT_SECRET}
+    EMAIL_USER: ${env:EMAIL_USER}
+    EMAIL_PASSWORD: ${env:EMAIL_PASSWORD}
+    MONGO_URI: ${env:MONGO_URI}
+
+functions:
+  api:
+    handler: lambda.handler
+    events:
+      - httpApi: "*"
+
+plugins: []

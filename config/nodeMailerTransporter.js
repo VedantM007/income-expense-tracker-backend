@@ -1,13 +1,14 @@
-const nodemailer = require('nodemailer');
-const env = require('../environments/dev.env');
-const transporter = nodemailer.createTransport({
-    port: 465,               
-    host: "smtp.gmail.com",
-       auth: {
-            user: env.EMAIL_USER,
-            pass: env.EMAIL_PASSWORD,
-         },
-    secure: true,
-    });
+const nodemailer = require("nodemailer");
 
-    module.exports = transporter;
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+    }
+});
+
+module.exports = transporter;
