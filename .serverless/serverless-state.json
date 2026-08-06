@@ -12,8 +12,6 @@
       "timeout": 15,
       "environment": {
         "JWT_SECRET": "your_secret_key",
-        "EMAIL_USER": "vedantmandwe5@gmail.com",
-        "EMAIL_PASSWORD": "qvqg fxru ruur bkpf",
         "MONGO_URI": "mongodb+srv://Admin:1zTkRy01najR8Z8f@dev-cluster.bgktn.mongodb.net/"
       },
       "versionFunctions": true,
@@ -110,7 +108,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-c19b369b-dcba",
-                "S3Key": "serverless/income-expense-tracker/dev/1785584007542-2026-08-01T11:33:27.542Z/income-expense-tracker.zip"
+                "S3Key": "serverless/income-expense-tracker/dev/1786021246043-2026-08-06T13:00:46.043Z/income-expense-tracker.zip"
               },
               "Handler": "lambda.handler",
               "Runtime": "nodejs22.x",
@@ -120,8 +118,6 @@
               "Environment": {
                 "Variables": {
                   "JWT_SECRET": "your_secret_key",
-                  "EMAIL_USER": "vedantmandwe5@gmail.com",
-                  "EMAIL_PASSWORD": "qvqg fxru ruur bkpf",
                   "MONGO_URI": "mongodb+srv://Admin:1zTkRy01najR8Z8f@dev-cluster.bgktn.mongodb.net/"
                 }
               },
@@ -136,14 +132,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersioncbygqEL738a7xjo7HleDyMltQgWeWMnwmxlf71xAuZA": {
+          "ApiLambdaVersionjUlZoKsZmmphMgEypuNk14iqPi9HwenS1peEY9wlw": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "RluY3E5BOI+39UTIxLhnAs4iWr0NcewdNouG9aDEKVI="
+              "CodeSha256": "9zuaff5Fy9VXDUVUGgwcOsyhhiupo9xMvWwF6HBHaNQ="
             }
           },
           "HttpApi": {
@@ -249,7 +245,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersioncbygqEL738a7xjo7HleDyMltQgWeWMnwmxlf71xAuZA"
+              "Ref": "ApiLambdaVersionjUlZoKsZmmphMgEypuNk14iqPi9HwenS1peEY9wlw"
             },
             "Export": {
               "Name": "sls-income-expense-tracker-dev-ApiLambdaFunctionQualifiedArn"
@@ -310,7 +306,7 @@
         "timeout": 15,
         "runtime": "nodejs22.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersioncbygqEL738a7xjo7HleDyMltQgWeWMnwmxlf71xAuZA"
+        "versionLogicalId": "ApiLambdaVersionjUlZoKsZmmphMgEypuNk14iqPi9HwenS1peEY9wlw"
       }
     },
     "configValidationMode": "warn",
@@ -333,7 +329,7 @@
     "artifact": "D:\\Career\\personal_portfolio_projects\\income-expense-tracker\\backend\\income-expense-tracker-backend\\.serverless\\income-expense-tracker.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/income-expense-tracker/dev/1785584007542-2026-08-01T11:33:27.542Z",
+    "artifactDirectoryName": "serverless/income-expense-tracker/dev/1786021246043-2026-08-06T13:00:46.043Z",
     "artifact": "income-expense-tracker.zip"
   }
 }
