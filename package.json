@@ -23,7 +23,9 @@
     "mailgun.js": "^11.1.0",
     "mongoose": "^8.9.6",
     "nodemon": "^3.1.9",
-    "serverless-http": "^4.0.0"
+    "serverless-http": "^4.0.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "serverless": "^4.40.0"
