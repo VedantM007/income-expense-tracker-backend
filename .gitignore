@@ -14,7 +14,9 @@ dist/
 .next/
 
 # Environment files
-.serverless/
-environments/
 .env
 .env.*
+environments/
+
+# Serverless deployment artifacts
+.serverless/
