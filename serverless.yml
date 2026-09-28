@@ -11,8 +11,6 @@ provider:
   
   environment:
     JWT_SECRET: ${env:JWT_SECRET}
-    EMAIL_USER: ${env:EMAIL_USER}
-    EMAIL_PASSWORD: ${env:EMAIL_PASSWORD}
     MONGO_URI: ${env:MONGO_URI}
 
 functions:
