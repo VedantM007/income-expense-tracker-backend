@@ -13,5 +13,8 @@ jspm_packages/
 dist/
 .next/
 
-# # Environment files
-# environments/
+# Environment files
+.serverless/
+environments/
+.env
+.env.*
