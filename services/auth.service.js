@@ -134,43 +134,46 @@ const resendOtp = async({email})=>{
     };
 }
 
-const changePassword = async({userId, oldPassword, newPassword})=>{
-// Validate input
+const changePassword = async ({ oldPassword, newPassword }, userId) => {
     if (!userId || !oldPassword || !newPassword) {
-      const error = new Error("All fields are required");
-      error.status = 400;
-      throw error;
+        const error = new Error("All fields are required");
+        error.status = 400;
+        throw error;
     }
 
-    // Find user by ID
     const user = await User.findById(userId);
+
     if (!user) {
-      const error = new Error("User not found");
-      error.status = 404;
-      throw error;
+        const error = new Error("User not found");
+        error.status = 404;
+        throw error;
     }
 
-    // Verify old password
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(
+        oldPassword,
+        user.password
+    );
+
     if (!isPasswordValid) {
-      const error = new Error("Old password is incorrect");
-      error.status = 400;
-      throw error;
+        const error = new Error("Old password is incorrect");
+        error.status = 400;
+        throw error;
     }
 
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, authConfig.BCRYPT_SALT_ROUNDS);
+    const hashedNewPassword = await bcrypt.hash(
+        newPassword,
+        authConfig.BCRYPT_SALT_ROUNDS
+    );
 
-    // Update password in the database
     user.password = hashedNewPassword;
-    await user.save();
 
+    await user.save();
 
     return {
         status: 200,
         success: "Password changed successfully."
     };
-}
+};
 
 const sendResetPasswordEmail = async({email})=>{
       //Check whether the user exists or not

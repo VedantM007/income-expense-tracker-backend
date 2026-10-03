@@ -28,6 +28,6 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "serverless": "^4.40.0"
+    "serverless": "^4.43.0"
   }
 }
