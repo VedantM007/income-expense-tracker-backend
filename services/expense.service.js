@@ -1,10 +1,61 @@
-const mongoose = require('mongoose');
-const ExpenseCategory = require('../models/ExpenseCategory');
-const Expense = require('../models/Expense');
+const mongoose = require("mongoose");
+const ExpenseCategory = require("../models/ExpenseCategory");
+const Expense = require("../models/Expense");
+
+const validateExpenseInput = ({
+    title,
+    amount,
+    date,
+    description,
+    category
+}) => {
+    if (
+        typeof title !== "string" ||
+        title.trim().length < 1 ||
+        title.trim().length > 100
+    ) {
+        return "Title is required and must be 100 characters or less";
+    }
+
+    if (
+        (typeof amount !== "number" &&
+            typeof amount !== "string") ||
+        String(amount).trim() === "" ||
+        !Number.isFinite(Number(amount)) ||
+        Number(amount) <= 0
+    ) {
+        return "Amount must be a positive number";
+    }
+
+    if (!date || isNaN(new Date(date).getTime())) {
+        return "Invalid date format";
+    }
+
+    if (
+        typeof description !== "string" ||
+        description.trim().length < 1 ||
+        description.trim().length > 500
+    ) {
+        return "Description is required and must be 500 characters or less";
+    }
+
+    if (
+        category === undefined ||
+        category === null ||
+        category === ""
+    ) {
+        return "Category is required";
+    }
+
+    return null;
+};
 
 const getAllExpenseCategory = async () => {
     try {
-        const categories = await ExpenseCategory.find({}, "-_id id value");
+        const categories = await ExpenseCategory.find(
+            {},
+            "-_id id value"
+        );
 
         return {
             status: 200,
@@ -12,10 +63,15 @@ const getAllExpenseCategory = async () => {
             data: categories
         };
     } catch (error) {
+        console.error(
+            "getAllExpenseCategory Error:",
+            error
+        );
+
         return {
             status: 500,
-            success: "Failed to fetch categories!",
-            error: error
+            success: false,
+            error: "Failed to fetch categories!"
         };
     }
 };
@@ -30,7 +86,10 @@ const addExpense = async (body, userId) => {
             category
         } = body;
 
-        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        if (
+            !userId ||
+            !mongoose.Types.ObjectId.isValid(userId)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -38,30 +97,62 @@ const addExpense = async (body, userId) => {
             };
         }
 
-        if (!title || !amount || !date || !description || !category) {
+        const validationError = validateExpenseInput({
+            title,
+            amount,
+            date,
+            description,
+            category
+        });
+
+        if (validationError) {
             return {
                 status: 400,
                 success: false,
-                error: "All fields are required!"
+                error: validationError
+            };
+        }
+
+        const categoryExists = await ExpenseCategory.exists({
+            id: Number(category)
+        });
+
+        if (!categoryExists) {
+            return {
+                status: 400,
+                success: false,
+                error: "Invalid expense category!"
             };
         }
 
         const parsedDate = new Date(date);
+        const normalizedTitle = title.trim();
+        const normalizedAmount = Number(amount);
+        const normalizedCategory = Number(category);
 
-        if (isNaN(parsedDate.getTime())) {
+        const duplicateExpense =
+            await Expense.findOne({
+                userId,
+                title: normalizedTitle,
+                amount: normalizedAmount,
+                date: parsedDate,
+                category: normalizedCategory
+            });
+
+        if (duplicateExpense) {
             return {
-                status: 400,
+                status: 409,
                 success: false,
-                error: "Invalid date format!"
+                error: "This expense already exists!"
             };
         }
 
         const newExpense = new Expense({
-            title,
-            amount,
+            title: normalizedTitle,
+            amount: normalizedAmount,
             date: parsedDate,
-            description,
-            category,
+            description: description.trim(),
+            category: normalizedCategory,
             userId
         });
 
@@ -73,17 +164,22 @@ const addExpense = async (body, userId) => {
             data: savedExpense
         };
     } catch (error) {
+        console.error("addExpense Error:", error);
+
         return {
             status: 500,
-            success: "Failed to add expense!",
-            error: error
+            success: false,
+            error: "Failed to add expense!"
         };
     }
 };
 
 const getAllExpensesByUserId = async (userId) => {
     try {
-        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        if (
+            !userId ||
+            !mongoose.Types.ObjectId.isValid(userId)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -91,7 +187,11 @@ const getAllExpensesByUserId = async (userId) => {
             };
         }
 
-        const expenses = await Expense.find({ userId }).sort({ date: 1 });
+        const expenses = await Expense.find({
+            userId
+        }).sort({
+            date: 1
+        });
 
         const categories = await ExpenseCategory.find();
 
@@ -100,10 +200,14 @@ const getAllExpensesByUserId = async (userId) => {
             return acc;
         }, {});
 
-        const expensesWithCategory = expenses.map(expense => ({
-            ...expense.toObject(),
-            categoryName: categoryMap[expense.category] || "Unknown"
-        }));
+        const expensesWithCategory = expenses.map(
+            (expense) => ({
+                ...expense.toObject(),
+                categoryName:
+                    categoryMap[expense.category] ||
+                    "Unknown"
+            })
+        );
 
         return {
             status: 200,
@@ -111,10 +215,15 @@ const getAllExpensesByUserId = async (userId) => {
             data: expensesWithCategory
         };
     } catch (error) {
+        console.error(
+            "getAllExpensesByUserId Error:",
+            error
+        );
+
         return {
             status: 500,
-            success: "Failed to fetch expenses!",
-            error: error
+            success: false,
+            error: "Failed to fetch expenses!"
         };
     }
 };
@@ -123,7 +232,10 @@ const deleteExpenseById = async (query, userId) => {
     try {
         const { id } = query;
 
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        if (
+            !id ||
+            !mongoose.Types.ObjectId.isValid(id)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -131,7 +243,10 @@ const deleteExpenseById = async (query, userId) => {
             };
         }
 
-        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        if (
+            !userId ||
+            !mongoose.Types.ObjectId.isValid(userId)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -139,10 +254,11 @@ const deleteExpenseById = async (query, userId) => {
             };
         }
 
-        const deletedExpense = await Expense.findOneAndDelete({
-            _id: id,
-            userId
-        });
+        const deletedExpense =
+            await Expense.findOneAndDelete({
+                _id: id,
+                userId
+            });
 
         if (!deletedExpense) {
             return {
@@ -158,10 +274,15 @@ const deleteExpenseById = async (query, userId) => {
             data: deletedExpense
         };
     } catch (error) {
+        console.error(
+            "deleteExpenseById Error:",
+            error
+        );
+
         return {
             status: 500,
-            success: "Failed to delete expense!",
-            error: error
+            success: false,
+            error: "Failed to delete expense!"
         };
     }
 };
@@ -170,7 +291,10 @@ const getExpenseByExpenseId = async (query, userId) => {
     try {
         const { _id } = query;
 
-        if (!_id || !mongoose.Types.ObjectId.isValid(_id)) {
+        if (
+            !_id ||
+            !mongoose.Types.ObjectId.isValid(_id)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -178,7 +302,10 @@ const getExpenseByExpenseId = async (query, userId) => {
             };
         }
 
-        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        if (
+            !userId ||
+            !mongoose.Types.ObjectId.isValid(userId)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -211,7 +338,8 @@ const getExpenseByExpenseId = async (query, userId) => {
         const expenseWithCategory = {
             ...expensePlain,
             categoryName:
-                categoryMap[expensePlain.category] || "Unknown"
+                categoryMap[expensePlain.category] ||
+                "Unknown"
         };
 
         return {
@@ -220,10 +348,15 @@ const getExpenseByExpenseId = async (query, userId) => {
             data: expenseWithCategory
         };
     } catch (error) {
+        console.error(
+            "getExpenseByExpenseId Error:",
+            error
+        );
+
         return {
             status: 500,
-            success: "Failed to fetch expense!",
-            error: error
+            success: false,
+            error: "Failed to fetch expense!"
         };
     }
 };
@@ -239,7 +372,10 @@ const updateExpense = async (body, userId) => {
             category
         } = body;
 
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        if (
+            !id ||
+            !mongoose.Types.ObjectId.isValid(id)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -247,7 +383,10 @@ const updateExpense = async (body, userId) => {
             };
         }
 
-        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        if (
+            !userId ||
+            !mongoose.Types.ObjectId.isValid(userId)
+        ) {
             return {
                 status: 400,
                 success: false,
@@ -255,40 +394,76 @@ const updateExpense = async (body, userId) => {
             };
         }
 
-        if (!title || !amount || !date || !description || !category) {
+        const validationError = validateExpenseInput({
+            title,
+            amount,
+            date,
+            description,
+            category
+        });
+
+        if (validationError) {
             return {
                 status: 400,
                 success: false,
-                error: "All fields are required!"
+                error: validationError
+            };
+        }
+
+        const categoryExists = await ExpenseCategory.exists({
+            id: Number(category)
+        });
+
+        if (!categoryExists) {
+            return {
+                status: 400,
+                success: false,
+                error: "Invalid expense category!"
             };
         }
 
         const parsedDate = new Date(date);
+        const normalizedTitle = title.trim();
+        const normalizedAmount = Number(amount);
+        const normalizedCategory = Number(category);
 
-        if (isNaN(parsedDate.getTime())) {
+        const duplicateExpense =
+            await Expense.findOne({
+                _id: { $ne: id },
+                userId,
+                title: normalizedTitle,
+                amount: normalizedAmount,
+                date: parsedDate,
+                category: normalizedCategory
+            });
+
+        if (duplicateExpense) {
             return {
-                status: 400,
+                status: 409,
                 success: false,
-                error: "Invalid date format!"
+                error:
+                    "Another expense with the same details already exists!"
             };
         }
 
-        const updatedExpense = await Expense.findOneAndUpdate(
-            {
-                _id: id,
-                userId
-            },
-            {
-                title,
-                amount,
-                date: parsedDate,
-                description,
-                category
-            },
-            {
-                new: true
-            }
-        );
+        const updatedExpense =
+            await Expense.findOneAndUpdate(
+                {
+                    _id: id,
+                    userId
+                },
+                {
+                    title: normalizedTitle,
+                    amount: normalizedAmount,
+                    date: parsedDate,
+                    description: description.trim(),
+                    category: normalizedCategory
+                },
+                {
+                    new: true,
+                    runValidators: true
+                }
+            );
 
         if (!updatedExpense) {
             return {
@@ -304,10 +479,12 @@ const updateExpense = async (body, userId) => {
             data: updatedExpense
         };
     } catch (error) {
+        console.error("updateExpense Error:", error);
+
         return {
             status: 500,
-            success: "Failed to update expense!",
-            error: error
+            success: false,
+            error: "Failed to update expense!"
         };
     }
 };

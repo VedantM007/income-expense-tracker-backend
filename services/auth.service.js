@@ -6,137 +6,225 @@ const crypto = require("crypto");
 const emailService = require("../services/email.service");
 const InvalidToken = require("../models/InvalidToken");
 
-const signUp = async ({firstName, lastName, email, password}) => {
-   // Step 2: Check if the user already exists
+const {
+    isValidEmail,
+    isValidPassword,
+    isValidOtp,
+    isValidText
+} = require("../utils/validation");
+
+const signUp = async ({ firstName, lastName, email, password }) => {
+    firstName = firstName?.trim();
+    lastName = lastName?.trim();
+    email = email?.trim().toLowerCase();
+
+    if (
+        !isValidText(firstName, 2, 50) ||
+        !isValidText(lastName, 2, 50)
+    ) {
+        const error = new Error(
+            "Valid first name and last name are required"
+        );
+        error.status = 400;
+        throw error;
+    }
+
+    if (!isValidEmail(email)) {
+        const error = new Error("Invalid email format");
+        error.status = 400;
+        throw error;
+    }
+
+    if (!isValidPassword(password)) {
+        const error = new Error(
+            "Password must be between 8 and 128 characters"
+        );
+        error.status = 400;
+        throw error;
+    }
+
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
         const error = new Error("User with this email already exists");
         error.status = 400;
         throw error;
     }
 
-    //Step 3 : Hash the password
-    const hashedPassword = await bcrypt.hash(password, authConfig.BCRYPT_SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(
+        password,
+        authConfig.BCRYPT_SALT_ROUNDS
+    );
 
-    // Step 4: Create a new user
     await User.create({
         firstName,
         lastName,
-        email,      
-        password: hashedPassword,
+        email,
+        password: hashedPassword
     });
 
-    // Step 5: Send welcome email
-   await emailService.sendWelcomeEmail(email, firstName, lastName);
+    await emailService.sendWelcomeEmail(
+        email,
+        firstName,
+        lastName
+    );
 
     return {
         status: 201,
         success: "User created successfully, Welcome Email sent!"
     };
-}
+};
 
-const signin = async ({email, password}) => {
-     const user = await User.findOne({ email });
-    if (!user){
+const signin = async ({ email, password }) => {
+    email = email?.trim().toLowerCase();
+
+    if (!isValidEmail(email) || !password) {
+        const error = new Error("Invalid email or password");
+        error.status = 400;
+        throw error;
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
         const error = new Error("Invalid email or password");
         error.status = 401;
         throw error;
     }
-      
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid){
+    const isPasswordValid = await bcrypt.compare(
+        password,
+        user.password
+    );
+
+    if (!isPasswordValid) {
         const error = new Error("Invalid email or password");
         error.status = 401;
         throw error;
     }
 
-    // Generate OTP
-    const otp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP
-    const otpExpires = Date.now() + authConfig.OTP_EXPIRY_MINUTES * 60 * 1000; // OTP expires in 10 minutes
+    const otp = crypto.randomInt(100000, 999999).toString();
 
-    // Save OTP and expiration in the database
+    const otpExpires =
+        Date.now() +
+        authConfig.OTP_EXPIRY_MINUTES * 60 * 1000;
+
     user.otp = otp;
     user.otpExpires = otpExpires;
+
     await user.save();
 
-    // Send OTP via email
-   await emailService.sendOtpForSignInEmail(email, otp)
+    await emailService.sendOtpForSignInEmail(email, otp);
 
-     return {
+    return {
         status: 200,
         success: "OTP sent to email. Please verify to complete sign-in."
     };
-}
+};
 
-const verifyOtp = async({email, otp})=>{
-     const user = await User.findOne({ email });
+const verifyOtp = async ({ email, otp }) => {
+    email = email?.trim().toLowerCase();
+
+    if (!isValidEmail(email) || !isValidOtp(otp)) {
+        const error = new Error("Invalid email or OTP");
+        error.status = 400;
+        throw error;
+    }
+
+    const user = await User.findOne({ email });
+
     if (!user) {
-      const error = new Error("Invalid email or OTP");
-      error.status = 401;
-      throw error;
+        const error = new Error("Invalid email or OTP");
+        error.status = 401;
+        throw error;
     }
 
-    // Check if OTP matches and is not expired
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      const error = new Error("Invalid or expired OTP");
-      error.status = 401;
-      throw error;
+    if (
+        user.otp !== otp ||
+        !user.otpExpires ||
+        user.otpExpires < Date.now()
+    ) {
+        const error = new Error("Invalid or expired OTP");
+        error.status = 401;
+        throw error;
     }
 
-    // Clear OTP fields after successful verification
     user.otp = undefined;
     user.otpExpires = undefined;
+
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, authConfig.JWT_SECRET, {
-      expiresIn: authConfig.JWT_EXPIRY,
-    });
-
+    const token = jwt.sign(
+        {
+            id: user._id,
+            email: user.email
+        },
+        authConfig.JWT_SECRET,
+        {
+            expiresIn: authConfig.JWT_EXPIRY
+        }
+    );
 
     return {
-      status: 200,
-      success: "OTP verified successfully, You are logged in!",
-      data:{
-        userId: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      token,
-      },
+        status: 200,
+        success: "OTP verified successfully, You are logged in!",
+        data: {
+            userId: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            token
+        }
     };
-}
+};
 
-const resendOtp = async({email})=>{
-    const user = await User.findOne({ email });
-    if (!user){
-      const error = new Error("Invalid email");
-      error.status = 401;
-      throw error;
+const resendOtp = async ({ email }) => {
+    email = email?.trim().toLowerCase();
+
+    if (!isValidEmail(email)) {
+        const error = new Error("Invalid email");
+        error.status = 400;
+        throw error;
     }
 
-    // Generate a new OTP
-    const otp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP
-    const otpExpires = Date.now() + authConfig.OTP_EXPIRY_MINUTES * 60 * 1000; // OTP expires in 10 minutes
+    const user = await User.findOne({ email });
 
-    // Save OTP and expiration in the database
+    if (!user) {
+        const error = new Error("Invalid email");
+        error.status = 401;
+        throw error;
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    const otpExpires =
+        Date.now() +
+        authConfig.OTP_EXPIRY_MINUTES * 60 * 1000;
+
     user.otp = otp;
     user.otpExpires = otpExpires;
+
     await user.save();
 
-    // Send the new OTP via email
     await emailService.resendOtpEmail(email, otp);
 
     return {
         status: 200,
         success: "OTP resent successfully to your email."
     };
-}
+};
 
 const changePassword = async ({ oldPassword, newPassword }, userId) => {
     if (!userId || !oldPassword || !newPassword) {
         const error = new Error("All fields are required");
+        error.status = 400;
+        throw error;
+    }
+
+    if (!isValidPassword(newPassword)) {
+        const error = new Error(
+            "New password must be between 8 and 128 characters"
+        );
         error.status = 400;
         throw error;
     }
@@ -175,84 +263,182 @@ const changePassword = async ({ oldPassword, newPassword }, userId) => {
     };
 };
 
-const sendResetPasswordEmail = async({email})=>{
-      //Check whether the user exists or not
+const sendResetPasswordEmail = async ({ email }) => {
+    email = email?.trim().toLowerCase();
+
+    if (!isValidEmail(email)) {
+        const error = new Error("Invalid email");
+        error.status = 400;
+        throw error;
+    }
+
     const existingUser = await User.findOne({ email });
-    if (!existingUser){
-      const error = new Error("This email doesn't exist or this email hasn't been registered yet");
-      error.status = 400;
-      throw error;
+
+    if (!existingUser) {
+        return {
+            status: 200,
+            success:
+                "If the email is registered, a reset password email has been sent."
+        };
     }
 
-         // Generate JWT token
-       const token = jwt.sign({ userId: existingUser._id}, authConfig.JWT_SECRET, {
-      expiresIn: authConfig.RESET_PASSWORD_EXPIRY,
-       });
-
-    // Send the reset password link via email
-   await emailService.sendResetPasswordEmail(email, token);
-
-   return {
-    status: 200,
-    success: "Reset password email sent successfully."
-   }
-}
-
-const verifyResetToken = async({token})=>{
-    if (!token) {
-      const error = new Error("Token is required");
-      error.status = 400;
-      throw error;
-    }
-
-    // Check if the token is already used/invalidated
-    const isInvalid = await InvalidToken.findOne({ token });
-    if (isInvalid) {
-      const error = new Error("Token has already been used or expired");
-      error.status = 400;
-      throw error;
-    }
-
-    // Verify the token
-   const decoded = jwt.verify(token, authConfig.JWT_SECRET);
-   return {
-        status: 200,
-        success: "Token is valid",
-        data: {
-          userId: decoded.userId
+    const token = jwt.sign(
+        {
+            userId: existingUser._id
+        },
+        authConfig.JWT_SECRET,
+        {
+            expiresIn: authConfig.RESET_PASSWORD_EXPIRY
         }
-      };
-     
-}
+    );
 
-const resetPassword = async({token, newPassword})=>{
-        if (!token) {
-      const error = new Error("Token is required");
-      error.status = 400;
-      throw error;
+    await emailService.sendResetPasswordEmail(email, token);
+
+    return {
+        status: 200,
+        success:
+            "If the email is registered, a reset password email has been sent."
+    };
+};
+
+const verifyResetToken = async ({ token }) => {
+    if (!token) {
+        const error = new Error("Token is required");
+        error.status = 400;
+        throw error;
     }
 
-    // Check if token is already used/invalid
     const isInvalid = await InvalidToken.findOne({ token });
+
     if (isInvalid) {
-      const error = new Error("Token has already been used or expired");
-      error.status = 400;
-      throw error;
+        const error = new Error(
+            "Token has already been used or expired"
+        );
+        error.status = 400;
+        throw error;
     }
 
-    // Verify token
-  const decoded = jwt.verify(token, authConfig.JWT_SECRET);
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, authConfig.BCRYPT_SALT_ROUNDS);
-      await User.findByIdAndUpdate(decoded.userId, { password: hashedPassword });
+    try {
+        const decoded = jwt.verify(
+            token,
+            authConfig.JWT_SECRET
+        );
 
-      // Store the used token in InvalidToken collection to prevent reuse
-      await InvalidToken.create({ token });
+        if (!decoded.userId) {
+            const error = new Error("Invalid reset token");
+            error.status = 400;
+            throw error;
+        }
 
-      return{
+        return {
+            status: 200,
+            success: "Token is valid",
+            data: {
+                userId: decoded.userId
+            }
+        };
+    } catch (error) {
+        if (error.status) {
+            throw error;
+        }
+
+        const tokenError = new Error(
+            error.name === "TokenExpiredError"
+                ? "Reset token has expired"
+                : "Invalid reset token"
+        );
+
+        tokenError.status = 400;
+        throw tokenError;
+    }
+};
+
+const resetPassword = async ({ token, newPassword }) => {
+    if (!token || !newPassword) {
+        const error = new Error(
+            !token
+                ? "Token is required"
+                : "New password is required"
+        );
+
+        error.status = 400;
+        throw error;
+    }
+
+    if (!isValidPassword(newPassword)) {
+        const error = new Error(
+            "New password must be between 8 and 128 characters"
+        );
+        error.status = 400;
+        throw error;
+    }
+
+    const isInvalid = await InvalidToken.findOne({ token });
+
+    if (isInvalid) {
+        const error = new Error(
+            "Token has already been used or expired"
+        );
+        error.status = 400;
+        throw error;
+    }
+
+    let decoded;
+
+    try {
+        decoded = jwt.verify(
+            token,
+            authConfig.JWT_SECRET
+        );
+    } catch (error) {
+        const tokenError = new Error(
+            error.name === "TokenExpiredError"
+                ? "Reset token has expired"
+                : "Invalid reset token"
+        );
+
+        tokenError.status = 400;
+        throw tokenError;
+    }
+
+    if (!decoded.userId) {
+        const error = new Error("Invalid reset token");
+        error.status = 400;
+        throw error;
+    }
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+        const error = new Error("User not found");
+        error.status = 404;
+        throw error;
+    }
+
+    const hashedPassword = await bcrypt.hash(
+        newPassword,
+        authConfig.BCRYPT_SALT_ROUNDS
+    );
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    await InvalidToken.create({ token });
+
+    return {
         status: 200,
         success: "Password reset successful. Please login."
-      }
-}
+    };
+};
 
-module.exports = {signUp, signin, verifyOtp, resendOtp, changePassword, sendResetPasswordEmail, verifyResetToken, resetPassword}
+module.exports = {
+    signUp,
+    signin,
+    verifyOtp,
+    resendOtp,
+    changePassword,
+    sendResetPasswordEmail,
+    verifyResetToken,
+    resetPassword
+};

@@ -1,12 +1,14 @@
-const moongoose = require('mongoose');
+const mongoose = require('mongoose');
 
-const userSchema = new moongoose.Schema({
+const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    otp: {type : String}, // To store the OTP
-    otpExpires: {type : Date}, // To store OTP expiration time
+    otp: { type: String },
+    otpExpires: { type: Date },
+}, {
+    timestamps: true
 });
 
-module.exports = moongoose.model('User', userSchema);
+module.exports = mongoose.model('User', userSchema);
