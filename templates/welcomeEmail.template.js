@@ -72,7 +72,7 @@ function generateWelcomeEmailTemplate(firstName, lastName){
         this project aims to promote smarter financial decisions and simplify
         personal budgeting.</p>
         <p>
-          Click here to <a href="https://income-expense-tracker-x2a3.onrender.com/sign-in">Sign In</a> and get started with the Income-Expense Tracker
+          Click here to <a href="https://d244g522gxcuw5.cloudfront.net/sign-in">Sign In</a> and get started with the Income-Expense Tracker
         </p>
         <p>Thank you,<br> The Support Team</p>
       </div>

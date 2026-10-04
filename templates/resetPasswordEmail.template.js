@@ -66,7 +66,7 @@ return `<!DOCTYPE html>
       </div>
       <div class="email-body">
         <p>Hello ${email},</p>
-        <p>To reset your password please click on this <a href="https://income-expense-tracker-x2a3.onrender.com/reset-password/${token}">link</a></p>
+        <p>To reset your password please click on this <a href="https://d244g522gxcuw5.cloudfront.net/reset-password/${token}">link</a></p>
         <p>This link is valid for 10 minutes. Please make sure to visit it within that time.</p>
         <p>If you did not request this, please ignore this email.</p>
         <p>Thank you,<br> The Support Team</p>
