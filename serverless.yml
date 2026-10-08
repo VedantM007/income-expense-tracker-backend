@@ -10,6 +10,21 @@ provider:
   region: ap-south-1
   stage: dev
   timeout: 15
+
+  httpApi:
+    cors:
+      allowedOrigins:
+        - https://www.income-expense-tracker.vedantlab.com
+        - http://localhost:4200
+      allowedMethods:
+        - GET
+        - POST
+        - DELETE
+        - PUT
+        - OPTIONS
+      allowedHeaders:
+        - Content-Type
+        - Authorization
   
   environment:
     JWT_SECRET: ${env:JWT_SECRET}
