@@ -5,6 +5,6 @@ module.exports = {
         RESEND_OTP: "Resend: Your OTP for Sign In",
         RESET_PASSWORD: "Reset Password",
     },
-    EMAIL_FROM: 'vedantmandwe5@gmail.com',
+    EMAIL_FROM: 'no-reply@vedantlab.com',
     EMAIL_TEXT: "Hello User"
 };

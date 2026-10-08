@@ -72,12 +72,12 @@ function generateWelcomeEmailTemplate(firstName, lastName){
         this project aims to promote smarter financial decisions and simplify
         personal budgeting.</p>
         <p>
-          Click here to <a href="https://d244g522gxcuw5.cloudfront.net/sign-in">Sign In</a> and get started with the Income-Expense Tracker
+          Click here to <a href="https://www.income-expense-tracker.vedantlab.com/sign-in">Sign In</a> and get started with the Income-Expense Tracker
         </p>
         <p>Thank you,<br> The Support Team</p>
       </div>
       <div class="footer">
-        <p>© ${currentYear} Vedant Mandwe. All rights reserved.</p>
+        <p>© ${currentYear} Vedant Labs. All rights reserved.</p>
       </div>
     </div>
   </body>

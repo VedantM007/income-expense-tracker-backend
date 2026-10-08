@@ -90,7 +90,7 @@ function generateResendOtpEmailTemplate(email, otp){
         <p>Thank you,<br> The Support Team</p>
       </div>
       <div class="footer">
-        <p>© ${currentYear} Wayne Industries. All rights reserved.</p>
+        <p>© ${currentYear} Vedant Labs. All rights reserved.</p>
       </div>
     </div>
   </body>
